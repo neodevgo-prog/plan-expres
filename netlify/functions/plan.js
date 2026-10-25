@@ -5,7 +5,7 @@ const NIVELES = ['básico', 'intermedio', 'avanzado'];
 
 async function callModel(prompt) {
   const key = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
   if (!key) throw new Error('Falta GEMINI_API_KEY en Netlify');
   const r = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -14,7 +14,7 @@ async function callModel(prompt) {
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+        generationConfig: { responseMimeType: 'application/json' },
       }),
     }
   );
