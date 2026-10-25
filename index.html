@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plan exprés: aprende lo que necesitas, en el plazo que tienes</title>
+<style>
+:root{--bg:#f4f6f8;--fg:#12202e;--mut:#5b6b7a;--card:#fff;--ac:#2447d6;--acf:#fff;--bd:#cfd7df;--ok:#15803d;--no:#b91c1c}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1620;--fg:#e8eef4;--mut:#93a3b3;--card:#16212d;--ac:#7c9cff;--acf:#0e1620;--bd:#2c3a49;--ok:#4ade80;--no:#f87171}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:680px;margin:0 auto;padding:36px 18px 72px}
+h1{font:700 2rem/1.15 Palatino,"Iowan Old Style",Georgia,serif;margin:0 0 8px}
+h2{font:700 1.25rem/1.3 Palatino,"Iowan Old Style",Georgia,serif;margin:24px 0 8px}
+.sub{color:var(--mut);margin:0 0 24px}
+.row{display:block;width:100%;text-align:left;padding:14px 16px;margin:0 0 10px;border:1.5px dashed var(--bd);border-radius:6px;background:transparent;color:var(--fg);font:inherit;cursor:pointer}
+.row b{display:block}.row span{color:var(--mut);font-size:.9rem}
+.row.live{border:1.5px solid var(--ac);background:var(--ac);color:var(--acf)}
+.row.live span{color:var(--acf);opacity:.85}
+.row:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+label{display:block;margin:16px 0 4px;font-weight:600;font-size:.95rem}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);font:inherit}
+.btn{margin-top:20px;padding:12px 20px;border:0;border-radius:6px;background:var(--ac);color:var(--acf);font:600 1rem system-ui,sans-serif;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:wait}
+.back{background:none;border:0;color:var(--ac);font:600 .95rem system-ui,sans-serif;cursor:pointer;padding:0;margin-bottom:18px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:14px 16px;margin:14px 0}
+ol{padding-left:22px}li{margin:6px 0}
+.en{font-weight:600}.es{color:var(--mut)}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer}
+.opt.ok{border-color:var(--ok);color:var(--ok)}.opt.no{border-color:var(--no);color:var(--no)}
+.msg{color:var(--mut)}.err{color:var(--no)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+
+<section id="home">
+  <h1>¿Qué problema quieres resolver?</h1>
+  <p class="sub">Elige uno y recibe un plan con fecha, guiado por voz y a tu ritmo.</p>
+  <div id="list"></div>
+</section>
+
+<section id="soon" hidden>
+  <button class="back" data-go="home">Volver</button>
+  <h1 id="soonName"></h1>
+  <p class="sub">Todavía no está listo. Déjanos tu email y te avisamos cuando lo esté.</p>
+  <form id="sf" name="interes" method="POST" data-netlify="true">
+    <input type="hidden" name="form-name" value="interes">
+    <input type="hidden" name="nicho" id="sn">
+    <label for="em">Tu email</label>
+    <input id="em" type="email" name="email" required autocomplete="email">
+    <button class="btn">Avisarme</button>
+  </form>
+  <p id="sm" class="msg"></p>
+</section>
+
+<section id="form" hidden>
+  <button class="back" data-go="home">Volver</button>
+  <h1>Entrevista de trabajo en inglés</h1>
+  <p class="sub">Cuéntanos tu situación y creamos tu plan de preparación.</p>
+  <form id="pf">
+    <label for="puesto">Puesto al que aspiras</label>
+    <input id="puesto" required maxlength="80" placeholder="Ej.: camarero, analista de datos, recepcionista">
+    <label for="dias">Días hasta tu entrevista</label>
+    <input id="dias" type="number" min="1" max="14" value="5" required>
+    <label for="nivel">Tu nivel de inglés</label>
+    <select id="nivel"><option>básico</option><option selected>intermedio</option><option>avanzado</option></select>
+    <button class="btn" id="go">Crear mi plan</button>
+  </form>
+  <p id="pm" class="msg" role="status"></p>
+</section>
+
+<section id="result" hidden>
+  <button class="back" data-go="form">Cambiar datos</button>
+  <h1 id="rt"></h1>
+  <h2>Tu plan</h2>
+  <ol id="plan"></ol>
+  <h2>Sesión 1</h2>
+  <div class="box"><p id="intro"></p><button class="btn" id="listen">Escuchar la sesión</button></div>
+  <h2>Frases clave</h2>
+  <div class="box" id="frases"></div>
+  <h2>Practica en voz alta</h2>
+  <div class="box"><p class="en" id="pq"></p><p class="es">Responde en voz alta, sin mirar. Cuando puedas hacerlo sin pausas, pasa al quiz.</p></div>
+  <h2>Quiz</h2>
+  <div id="quiz"></div>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const views=['home','soon','form','result'];
+const go=id=>{views.forEach(v=>$('#'+v).hidden=v!==id);scrollTo(0,0)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){speechSynthesis.cancel();go(b.dataset.go)}});
+
+const NICHOS=[
+ {id:'entrevista',t:'Entrevista de trabajo en inglés',d:'Plan por días con voz, frases clave y quiz',live:true},
+ {id:'examen',t:'Examen con fecha',d:'Plan de estudio con ejercicios y repaso'},
+ {id:'cocina',t:'Aprender a cocinar',d:'Recetas guiadas paso a paso por voz'},
+ {id:'hablar',t:'Hablar en público',d:'Prepara y ensaya tu intervención'},
+ {id:'ejercicio',t:'Ejercicio en casa',d:'Rutina guiada por voz según tu tiempo'}
+];
+$('#list').innerHTML=NICHOS.map(n=>`<button class="row${n.live?' live':''}" data-n="${n.id}"><b>${esc(n.t)}</b><span>${n.live?esc(n.d):'Próximamente. '+esc(n.d)}</span></button>`).join('');
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-n]');if(!b)return;
+  const n=NICHOS.find(x=>x.id===b.dataset.n);
+  if(n.live){go('form');return}
+  $('#soonName').textContent=n.t;$('#sn').value=n.t;$('#sm').textContent='';go('soon');
+});
+
+$('#sf').addEventListener('submit',async e=>{
+  e.preventDefault();
+  try{
+    const r=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData(e.target)).toString()});
+    $('#sm').textContent=r.ok?'Listo, te avisaremos.':'No se pudo guardar. Inténtalo de nuevo.';
+  }catch(_){$('#sm').textContent='No se pudo guardar. Revisa tu conexión.'}
+});
+
+let DATA=null;
+$('#pf').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=$('#go');btn.disabled=true;$('#pm').className='msg';$('#pm').textContent='Creando tu plan. Puede tardar unos segundos.';
+  try{
+    const r=await fetch('/.netlify/functions/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({puesto:$('#puesto').value,dias:$('#dias').value,nivel:$('#nivel').value})});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.error||'Error');
+    DATA=j;render();$('#pm').textContent='';go('result');
+  }catch(err){$('#pm').className='err';$('#pm').textContent='No se pudo crear el plan: '+err.message+'. Inténtalo de nuevo en un minuto.'}
+  btn.disabled=false;
+});
+
+function render(){
+  const d=DATA,s=d.sesion1||{};
+  $('#rt').textContent=d.titulo||'Tu plan';
+  $('#plan').innerHTML=(d.plan||[]).map(p=>`<li><b>${esc(p.titulo)}.</b> ${esc(p.objetivo)}</li>`).join('');
+  $('#intro').textContent=s.intro||'';
+  $('#frases').innerHTML=(s.frases||[]).map(f=>`<p><span class="en">${esc(f.en)}</span><br><span class="es">${esc(f.es)}</span></p>`).join('');
+  $('#pq').textContent=s.pregunta||'';
+  $('#quiz').innerHTML=(s.quiz||[]).map((q,i)=>`<div class="box" data-q="${i}"><p><b>${esc(q.pregunta)}</b></p>${(q.opciones||[]).map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join('')}</div>`).join('');
+}
+$('#quiz').addEventListener('click',e=>{
+  const b=e.target.closest('.opt');if(!b)return;
+  const box=b.closest('[data-q]'),q=DATA.sesion1.quiz[box.dataset.q];
+  if(box.dataset.done)return;box.dataset.done=1;
+  box.querySelectorAll('.opt').forEach(o=>{const ok=+o.dataset.k===q.correcta;if(ok)o.classList.add('ok');else if(o===b)o.classList.add('no')});
+});
+function say(parts){
+  speechSynthesis.cancel();
+  parts.filter(p=>p[0]).forEach(([t,l])=>{const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=.9;speechSynthesis.speak(u)});
+}
+$('#listen').addEventListener('click',()=>{
+  if(!('speechSynthesis' in window)){alert('Tu navegador no admite voz. Prueba con Chrome o Edge.');return}
+  const s=DATA.sesion1,parts=[[s.intro,'es-ES']];
+  (s.frases||[]).forEach(f=>{parts.push([f.en,'en-US'],[f.es,'es-ES'])});
+  parts.push(['Ahora practica esta pregunta en voz alta.','es-ES'],[s.pregunta,'en-US']);
+  say(parts);
+});
+</script>
+</body>
+</html>
